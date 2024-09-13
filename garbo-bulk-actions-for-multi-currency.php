@@ -153,7 +153,8 @@ function garbo_set_new_price( $product, $price_type ) {
 		if ( isset( $new_price ) && $new_price !== $old_price ) {
 			$some_price_changed = true;
 			$new_price = round( $new_price, wc_get_price_decimals() );
-			$wmc_prices[$currency_code] = $new_price;
+			// when zero, set value to none
+			$wmc_prices[$currency_code] = ($new_price === 0.00)? null : $new_price;
 		}
 	}
 
