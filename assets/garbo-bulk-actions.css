@@ -1,0 +1,25 @@
+.inline-edit-group.currency label .title{
+    width: 6em;
+    padding: 0 0 0 1.5em;
+}
+.inline-edit-row fieldset .inline-edit-group.currency label span.input-text-wrap{
+	margin-left: 7.5em;
+}
+#woocommerce-fields-bulk.inline-edit-col .inline-edit-group.currency .regular_price, 
+#woocommerce-fields-bulk.inline-edit-col .inline-edit-group.currency .sale_price{
+	margin-left: 7em;
+	width: 15em;
+}
+
+.inline-edit-group.currency.NOK label .title{
+	background: transparent url(flags/norway.png) center left no-repeat;
+}
+.inline-edit-group.currency.EUR label .title{
+	background: transparent url(flags/eu.png) center left no-repeat;
+}
+.inline-edit-group.currency.SEK label .title{
+	background: transparent url(flags/sweden.png) center left no-repeat;
+}
+.inline-edit-group.currency.DKK label .title{
+	background: transparent url(flags/denmark.png) center left no-repeat;
+}
