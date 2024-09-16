@@ -32,7 +32,7 @@ function garbo_bulk_mc_enqueue_scripts($hook){
  * @param string $column_name Column being shown.
  * @param string $post_type Post type being shown.
  */
-function bulk_edit( $column_name, $post_type ) {
+function garbo_bulk_mc_bulk_edit_custom_box( $column_name, $post_type ) {
 	if ( 'price' !== $column_name || 'product' !== $post_type ) {
 		return;
 	}
@@ -49,7 +49,7 @@ function bulk_edit( $column_name, $post_type ) {
 	$default_currency = $multiCurrencySettings->get_default_currency();
 	include plugin_dir_path( __FILE__ ) . '/view-prices-bulk-edit.php';
 }
-add_action( 'bulk_edit_custom_box', 'bulk_edit', 10, 2 );
+add_action( 'bulk_edit_custom_box', 'garbo_bulk_mc_bulk_edit_custom_box', 10, 2 );
 
 
 function garbo_bulk_mc_edit_save($post_id, $post ){	// Check nonce.
@@ -60,10 +60,21 @@ function garbo_bulk_mc_edit_save($post_id, $post ){	// Check nonce.
 
 	$product = wc_get_product($post);
 	// Handle price - remove dates and set to lowest.
-	$change_price_product_types    = apply_filters( 'woocommerce_bulk_edit_save_price_product_types', array( 'simple', 'external' ) );
+	$change_price_product_types    = apply_filters( 'woocommerce_bulk_edit_save_price_product_types', ['simple', 'external', 'variation'] );
 	$can_product_type_change_price = false;
+
 	if(!in_array($product->get_type(), $change_price_product_types)){
-		return $post_id;
+		if($product->get_type() == 'variable'){
+			// for variable products, load their children.
+			$children = $product->get_children();
+			foreach ( $children as $child_id ) {
+				$variant = wc_get_product($child_id);
+				garbo_bulk_mc_edit_save($variant->get_id(), $variant);
+			}
+		}else{
+			// otherwise, don't do anything
+			return $post_id;
+		}
 	}
 
 	$regular_price_changed = garbo_set_new_price( $product, 'regular' );
@@ -161,3 +172,5 @@ function garbo_set_new_price( $product, $price_type ) {
 	$product->update_meta_data("_{$price_type}_price_wmcp", json_encode($wmc_prices) );
 	return $some_price_changed;
 }
+
+

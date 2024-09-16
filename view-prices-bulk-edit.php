@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php if($currency_key == $default_currency){
 				continue; 
 			} ?>
-			<?php error_log(print_r($currency, true)); ?>
 			<div class="inline-edit-group currency <?php echo $currency_key; ?>">
 				<label class="alignleft">
 					<span class="title"><?php printf(__( 'Price %s', 'woocommerce' ), $currency_key); ?></span>
