@@ -37,13 +37,6 @@ function garbo_bulk_mc_bulk_edit_custom_box( $column_name, $post_type ) {
 		return;
 	}
 
-	$shipping_class = get_terms(
-		'product_shipping_class',
-		array(
-			'hide_empty' => false,
-		)
-	);
-
 	$multiCurrencySettings = WOOMULTI_CURRENCY_Data::get_ins();
 	$wmcCurrencies = $multiCurrencySettings->get_list_currencies();
 	$default_currency = $multiCurrencySettings->get_default_currency();
@@ -105,24 +98,34 @@ function garbo_set_new_price( $product, $price_type ) {
 		$wmc_prices = array_fill_keys(array_keys($wmcCurrencies), null);
 	}
 
-
 	$some_price_changed = false;
 	
 	foreach($wmcCurrencies as $currency_code => $currency){
-		if ( empty( $request_data[ "change_{$price_type}_price_{$currency_code}" ] ) || !isset( $request_data[ "_{$price_type}_price_{$currency_code}" ] ) ) {
+		if($currency_code == $default_currency){ 
+			if($product->get_type() != 'variation'
+				|| (empty( $request_data["change_{$price_type}_price"]) || !isset($request_data["_{$price_type}_price"])) )
+			{
+				continue;
+			}
+		}elseif (empty( $request_data["change_{$price_type}_price_{$currency_code}"]) 
+			|| !isset( $request_data["_{$price_type}_price_{$currency_code}"]) )
+		{
 			continue;
 		}
 		
-		$old_price     = (float) $wmc_prices[$currency_code];
+		
+		if($currency_code == $default_currency){
+			$old_price = (float) $product->{"get_{$price_type}_price"}();
+			$change_price = absint($request_data[ "change_{$price_type}_price" ]);
+			$raw_price = wc_clean(wp_unslash($request_data[ "_{$price_type}_price" ]));
+		}else{
+			$old_price = (float) $wmc_prices[$currency_code];
+			$change_price  = absint( $request_data[ "change_{$price_type}_price_{$currency_code}" ] );
+			$raw_price     = wc_clean( wp_unslash( $request_data[ "_{$price_type}_price_{$currency_code}" ] ) );
+		}
 
-		$change_price  = absint( $request_data[ "change_{$price_type}_price_{$currency_code}" ] );
-		$raw_price     = wc_clean( wp_unslash( $request_data[ "_{$price_type}_price_{$currency_code}" ] ) );
 		$is_percentage = (bool) strstr( $raw_price, '%' );
 		$price         = wc_format_decimal( $raw_price );
-
-		if($change_price && $is_percentage && $price_type == 'sale'){
-			$wmc_regular_prices = json_decode($product->get_meta("_regular_price_wmcp"), true);
-		}
 
 		switch ( $change_price ) {
 			case 1:
@@ -148,7 +151,13 @@ function garbo_set_new_price( $product, $price_type ) {
 				if ( 'sale' !== $price_type ) {
 					break;
 				}
-				$regular_price = $wmc_regular_prices[$currency_code];
+				
+				if($currency_code == $default_currency){
+					$regular_price = $product->get_regular_price();
+				}else{
+					$regular_price = json_decode($product->get_meta("_regular_price_wmcp"), true)[$currency_code];	
+				}
+
 				if ( $is_percentage && is_numeric( $regular_price ) ) {
 					$percent   = $price / 100;
 					$new_price = max( 0, $regular_price - ( round( $regular_price * $percent, wc_get_price_decimals() ) ) );
@@ -168,8 +177,13 @@ function garbo_set_new_price( $product, $price_type ) {
 			}else{
 				$new_price = round( $new_price, wc_get_price_decimals() );
 			}
-			// when zero, set value to none
-			$wmc_prices[$currency_code] = ($new_price === 0.00)? null : $new_price;
+
+			if($currency_code == $default_currency){
+				$product->{"set_{$price_type}_price"}( $new_price );
+			}else{
+				// when zero, set value to none
+				$wmc_prices[$currency_code] = ($new_price === 0.00)? null : $new_price;
+			}
 		}
 	}
 
